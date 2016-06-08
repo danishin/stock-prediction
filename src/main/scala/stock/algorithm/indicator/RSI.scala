@@ -22,7 +22,7 @@ import org.saddle.Series
   *
   * @param rsiPeriod number of days to use for each of the 14 periods that are used in the RSI calculation
   */
-class RSI(rsiPeriod: Int = 14) extends Indicator {
+class RSI(rsiPeriod: Int = 14, upperBound: Double = 0.7, lowerBound: Double = 0.3) extends Indicator {
   import common.implicits._
 
   val name = "RSI"

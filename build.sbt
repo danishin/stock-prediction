@@ -15,6 +15,7 @@ libraryDependencies ++= {
 
     /* Scala */
     "org.scala-lang" % "scala-swing" % "2.11.0-M7",
+    "com.github.scopt" %% "scopt" % "3.4.0",
     "org.scalanlp" %% "breeze" % breezeVersion,
     "org.scalanlp" %% "breeze-natives" % breezeVersion,
     "org.scala-saddle" %% "saddle-core" % "1.3.4",

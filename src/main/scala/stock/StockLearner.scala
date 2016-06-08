@@ -10,38 +10,27 @@ import stock.data.{DataSource, DataSourceParams}
 
 import scala.concurrent.Future
 
-case class StockPredictionResult(predictedDate: LocalDate, price: Double, indicatorResults: Map[String, Double])
+case class StockPredictionParams(trainingWindowPeriod: Period, numDaysForecastAhead: Int)
 
 // TODO: Also add sentiment analysis for twitter and news and stuff
 
 @Singleton
-class StockLearner @Inject()(dataSource: DataSource) {
+class StockLearner @Inject() (dataSource: DataSource) {
   import common.implicits._
 
   private implicit val logger = Logger(classOf[StockLearner])
 
-  // TODO: This needs to be exported to json or sth so that we can optimize using evaluate on the fly without touching source code.
-  private val TrainingWindowPeriod = Period.ofYears(5)
-  private val NumDaysForecastAhead = 5
+  def predict(tickers: Seq[String], today: LocalDate, params: StockPredictionParams): Future[Map[String, Double]] = {
+    val linearRegression = {
+      val lrParams = LinearRegressionAlgorithmParams(Seq(new RSI/*, new BollingerBands*/), params.numDaysForecastAhead)
+      new LinearRegressionAlgorithm(lrParams)
+    }
 
-  private val linearRegression = {
-    val params = LinearRegressionAlgorithmParams(Seq(new RSI/*, new BollingerBands*/), NumDaysForecastAhead)
-    new LinearRegressionAlgorithm(params)
-  }
+    val dsParams = DataSourceParams(tickers, today.minus(params.trainingWindowPeriod), today)
 
-  // TODO: Currently defaults to only predicting 5 days from today.
-  def predict(tickers: Array[String]): Future[Map[String, StockPredictionResult]] = {
-    val today = LocalDate.now()
+    logger.trace(s"Requested Tickers: $tickers, DataSourceParams: $dsParams")
 
-    val params = DataSourceParams(tickers, today.minus(TrainingWindowPeriod), today)
-
-    logger.trace(s"Requested Tickers: $tickers, DataSourceParams: $params")
-
-    dataSource.getTraining(params)
+    dataSource.getTraining(dsParams)
       .map(_.mapValues(timeSeries => linearRegression.predict(timeSeries)))
-  }
-
-  def evaluate() = {
-
   }
 }

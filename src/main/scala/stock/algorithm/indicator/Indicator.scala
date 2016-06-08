@@ -4,6 +4,14 @@ import java.time.LocalDate
 
 import org.saddle.Series
 
+// TODO: START FROM HERE!!!! should we make this a classification problem of predicting what action to take instead of regression problem of predicting price?
+//sealed trait StockAction
+//object StockAction {
+//  case object Buy extends StockAction
+//  case object Sell extends StockAction
+//  case object Hold extends StockAction
+//}
+
 trait Indicator {
   import common.implicits._
 

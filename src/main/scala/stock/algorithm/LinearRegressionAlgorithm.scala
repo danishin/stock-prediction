@@ -6,7 +6,6 @@ import javax.inject.Singleton
 import org.saddle.index.InnerJoin
 import org.saddle.{Frame, Index, Series}
 import smile.regression.OLS
-import stock.StockPredictionResult
 import stock.algorithm.indicator.Indicator
 
 case class LabeledPoint(features: Array[Double], label: Double)
@@ -40,12 +39,13 @@ class LinearRegressionAlgorithm(params: LinearRegressionAlgorithmParams) {
       Frame(indicatorResults, indicatorNameIndex)
     }
 
-    val futurePriceSeries = timeSeries
-      .shift(params.numDaysForecastAhead)
-      .dropNA
+    val futureDailyRetSeries = {
+      val futurePrices = timeSeries.shift(params.numDaysForecastAhead).dropNA
+      (futurePrices - futurePrices.shift(1)).dropNA
+    }
 
     // drop indicator results at the beginning where future price is impossible.
-    val labeledPoints = futurePriceSeries.joinF(indicatorResultsFrame, InnerJoin)
+    val labeledPoints = futureDailyRetSeries.joinF(indicatorResultsFrame, InnerJoin)
       .toRowSeq
       .map { case (_, series) =>
         val arr = series.values.contents
@@ -59,15 +59,15 @@ class LinearRegressionAlgorithm(params: LinearRegressionAlgorithmParams) {
     new LinearRegressionModel(labeledPoints)
   }
 
-  def predict(timeSeries: Series[LocalDate, Double]): StockPredictionResult = {
+  def predict(timeSeries: Series[LocalDate, Double]): Double = {
     val trainingTimeSeries = timeSeries.slice(0, timeSeries.length - 1)
 
     val model = train(trainingTimeSeries)
 
     val targetFeatures = params.indicators.map(_.computeStandardizedLast(timeSeries)).toArray
 
-    val predictedPrice = model.predict(targetFeatures)
+    val predictedDailyRet = model.predict(targetFeatures)
 
-    StockPredictionResult(timeSeries.lastKey.get, predictedPrice, Map())
+    timeSeries.last.get + predictedDailyRet
   }
 }
